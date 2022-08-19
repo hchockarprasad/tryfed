@@ -9,7 +9,7 @@ use actix_web::{
 };
 use async_graphql::{
     http::{playground_source, GraphQLPlaygroundConfig},
-    EmptyMutation, EmptySubscription, Object, Schema, ID,
+    EmptyMutation, EmptySubscription, Object, Schema,
 };
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
 
@@ -26,7 +26,7 @@ impl Query {
     }
 
     #[graphql(entity)]
-    pub async fn find_user_by_id(&self, #[graphql(key)] id: ID) -> User {
+    pub async fn find_user_by_id(&self, id: u32) -> User {
         User::find_by_id(id)
     }
 }
@@ -47,7 +47,10 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let schema = Schema::build(Query, EmptyMutation::default(), EmptySubscription).finish();
-    println!("{}", schema.sdl());
+    println!(
+        "{}",
+        schema.execute("{ _service { sdl} }").await.into_result().unwrap().data
+    );
     let server = HttpServer::new(move || {
         App::new()
             .wrap(

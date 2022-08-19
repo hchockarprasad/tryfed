@@ -1,4 +1,5 @@
 mod product;
+mod user;
 
 use actix_cors::Cors;
 use actix_web::http::header;
@@ -14,6 +15,7 @@ use async_graphql::{
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
 
 use product::Product;
+use user::User;
 
 pub type AppSchema = Schema<Query, EmptyMutation, EmptySubscription>;
 
@@ -23,6 +25,11 @@ pub struct Query;
 impl Query {
     pub async fn products(&self) -> Vec<Product> {
         Product::all()
+    }
+
+    #[graphql(entity)]
+    pub async fn find_user_by_id(&self, id: u32) -> User {
+        User { id }
     }
 }
 
@@ -42,6 +49,10 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let schema = Schema::build(Query, EmptyMutation::default(), EmptySubscription).finish();
+    println!(
+        "{}",
+        schema.execute("{ _service { sdl} }").await.into_result().unwrap().data
+    );
     let server = HttpServer::new(move || {
         App::new()
             .wrap(

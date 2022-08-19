@@ -1,0 +1,10 @@
+federation_version: 2
+subgraphs:
+  user:
+    routing_url: http://127.0.0.1:8001
+    schema:
+      file: ./user.graphql
+  product:
+    routing_url: http://127.0.0.1:8002
+    schema:
+      file: ./product.graphql
