@@ -1,0 +1,14 @@
+type Product {
+	name: String!
+	mrp: Float!
+	ownedBy: User!
+}
+
+type Query {
+	products: [Product!]!
+}
+
+
+extend type User @key(fields: "id") {
+	id: Int! @external
+}
