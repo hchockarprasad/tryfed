@@ -7,9 +7,10 @@ use actix_web::{
     middleware::{NormalizePath, TrailingSlash},
     web, App, HttpResponse, HttpServer,
 };
+use async_graphql::dataloader::DataLoader;
 use async_graphql::{
     http::{playground_source, GraphQLPlaygroundConfig},
-    EmptyMutation, EmptySubscription, Object, Schema,
+    Context, EmptyMutation, EmptySubscription, Object, Schema,
 };
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
 
@@ -17,7 +18,7 @@ pub type AppSchema = Schema<Query, EmptyMutation, EmptySubscription>;
 
 pub struct Query;
 
-use user::User;
+use user::{User, UserLoader};
 
 #[Object(extends)]
 impl Query {
@@ -26,8 +27,12 @@ impl Query {
     }
 
     #[graphql(entity)]
-    pub async fn find_user_by_id(&self, id: u32) -> User {
-        User::find_by_id(id)
+    pub async fn find_user_by_id<'a>(&self, ctx: &Context<'a>, id: u32) -> User {
+        ctx.data_unchecked::<DataLoader<UserLoader>>()
+            .load_one(id)
+            .await
+            .unwrap()
+            .unwrap()
     }
 }
 
@@ -37,7 +42,8 @@ async fn index_playground() -> actix_web::Result<HttpResponse> {
 }
 
 async fn index(schema: web::Data<AppSchema>, gql_req: GraphQLRequest) -> GraphQLResponse {
-    let request = gql_req.into_inner();
+    let mut request = gql_req.into_inner();
+    request = request.data(DataLoader::new(UserLoader, tokio::spawn));
     schema.execute(request).await.into()
 }
 
